@@ -6,12 +6,14 @@ Future<String> sha256File(
   File file, {
   int chunkSize = 1024 * 1024,
 }) async {
-  final digest = await sha256.bind(
+  final digestStream = sha256.bind(
     file.openRead(
       0,
       null,
     ),
   );
+
+  final digest = await digestStream.first;
 
   return digest.toString();
 }
