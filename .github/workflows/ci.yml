@@ -26,12 +26,44 @@ jobs:
         with:
           channel: stable
           cache: true
-      - name: Generate Android project and Gradle wrapper
+          
+      - name: Generate Android project
         shell: bash
         run: flutter create --platforms=android .
+
+      - name: Auto-fix Gradle and AGP Conflicts
+        shell: bash
+        run: |
+          # 1. Force the correct Gradle Wrapper URL
+          cat <<EOF > android/gradle/wrapper/gradle-wrapper.properties
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.14-all.zip
+          networkTimeout=100000
+          validateDistributionUrl=true
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          EOF
+          
+          # 2. Delete conflicting Kotlin DSL files so Gradle uses your Groovy files
+          rm -f android/build.gradle.kts
+          rm -f android/app/build.gradle.kts
+          rm -f android/settings.gradle.kts
+          
+          # 3. Force upgrade AGP version in existing Groovy files to fix Flutter requirement
+          if [ -f "android/settings.gradle" ]; then
+            sed -i -e 's/version "8.[0-9]*.[0-9]*"/version "8.11.1"/g' android/settings.gradle
+            sed -i -e "s/version '8.[0-9]*.[0-9]*'/version '8.11.1'/g" android/settings.gradle
+          fi
+          if [ -f "android/build.gradle" ]; then
+            sed -i -e "s/com.android.tools.build:gradle:8.[0-9]*.[0-9]*/com.android.tools.build:gradle:8.11.1/g" android/build.gradle
+            sed -i -e 's/com.android.tools.build:gradle:8.[0-9]*.[0-9]*/com.android.tools.build:gradle:8.11.1/g' android/build.gradle
+          fi
+
       - run: flutter pub get
       - run: flutter build apk --release
       - run: flutter build appbundle --release
+      
       - uses: actions/upload-artifact@v4
         with:
           name: HyperDrop-Android
