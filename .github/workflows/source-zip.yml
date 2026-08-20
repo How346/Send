@@ -1,0 +1,26 @@
+name: HyperDrop Source ZIP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create clean source archive
+        shell: bash
+        run: |
+          zip -r HyperDrop-GitHub.zip . \
+            -x ".git/*" \
+            -x ".dart_tool/*" \
+            -x "build/*" \
+            -x "coverage/*" \
+            -x "*.keystore" \
+            -x "*.jks" \
+            -x ".env" \
+            -x ".env.*"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HyperDrop-GitHub
+          path: HyperDrop-GitHub.zip
